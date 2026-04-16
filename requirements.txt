@@ -1,0 +1,25 @@
+aiohttp>=3.9.0
+python-dotenv>=1.0.0
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+web3>=7.15.0
+
+# Weather data
+# Option A: Open-Meteo (easiest to start, free, no key needed)
+# No install needed — pure aiohttp fetch
+
+# Option B: raw GFS GRIB2 parsing (more accurate)
+cfgrib>=0.9.10
+eccodes>=1.6.0
+
+# Soccer data
+requests>=2.31.0  # for FBref scraping
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+
+# Financial data
+yfinance>=0.2.36   # S&P spot price
+deribit-api        # crypto implied vol
+
+# Live trading (implement when ready)
+py-clob-client>=0.14.0
