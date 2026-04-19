@@ -22,6 +22,24 @@ CONFIG = {
 
     # ── TRADING MODE ────────────────────────────────────────────────────────
     "paper_trade": True,
+    # If no opportunity passes min_edge/min_confidence, still simulate one virtual BUY/SELL
+    # cycle on the best scan row so paper logs and portfolio stay active.
+    "paper_simulate_trades_without_threshold": True,
+    # When simulating, NO leg size if model sizing would otherwise be zero.
+    "paper_virtual_min_no_size": 25.0,
+    # Mark price stored on virtual NO positions so early-sell (>= early_sell_threshold) can fire.
+    "paper_virtual_no_mark_price": 0.995,
+    # Log a clear virtual BUY/NO+YES (and merge/hold) block for every suitable opportunity.
+    # No wallet balance required — for operator visibility only.
+    "log_virtual_suitable_trades": True,
+    # After a real or paper execute(), log full BUY/SELL ticket lines (title, price, shares).
+    "log_trade_execution_details": True,
+    # Paper uses same 6-session UTC clock as live (dev guide Priority 1).
+    # Set True to always run session "S0" only + fast loop (local debugging only).
+    "paper_dev_fast_loop": False,
+    # Main loop sleeps (seconds): active = inside a session window, idle = outside.
+    "loop_sleep_active_sec": 120,
+    "loop_sleep_idle_sec":   300,
 
     # ── SESSIONS (UTC) ─────────────────────────────────────────────────────
     # S0  06:00-06:59  Pre-S1 burst (A-League Saturday + Asian pre-positioning)
@@ -134,10 +152,29 @@ CONFIG = {
     "financial_min_days": 1,
     "financial_max_days": 7,
 
+    # ── WEB BACKEND (bot + HTTP + WebSocket + static UI, ONE TCP port) ─────
+    # After `cd frontend && npm install && npm run build`, run:
+    #   python main.py --web
+    # Open in browser:  http://web_bind_host:web_port/
+    # (Legacy keys monitor_enabled / monitor_host / monitor_port still work.)
+    "web_enabled": True,
+    "web_bind_host": "127.0.0.1",
+    "web_port": 8765,
+
     # ── POLYMARKET API ──────────────────────────────────────────────────────
     "polymarket_clob_url":  "https://clob.polymarket.com",
     "polymarket_gamma_url": "https://gamma-api.polymarket.com",
     "polymarket_data_url":  "https://data-api.polymarket.com",
+
+    # CLOB Market WebSocket (real-time book / prices). See:
+    # https://docs.polymarket.com/market-data/websocket/overview
+    "polymarket_ws_enabled": True,
+    "polymarket_ws_market_url": "wss://ws-subscriptions-clob.polymarket.com/ws/market",
+    "polymarket_ws_custom_features": True,
+    "polymarket_ws_after_subscribe_sleep": 0.25,
+    # If True, log every quote tick at INFO even when title/slug are unknown (noisy).
+    # If False, unknown tokens log quotes at DEBUG; labeled tokens stay INFO.
+    "polymarket_ws_log_all_quotes": False,
 
     # ── ROTATION ENGINE ─────────────────────────────────────────────────────
     "signal_lookback_days":     7,

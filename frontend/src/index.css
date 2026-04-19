@@ -1,0 +1,41 @@
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --panel: #1a222c;
+  --border: #2d3844;
+  --text: #e7ecf1;
+  --muted: #8b9bab;
+  --accent: #3d9cf0;
+  --buy: #34c759;
+  --sell: #ff9f0a;
+  --price: #bf5af2;
+  --err: #ff453a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.45;
+  font-size: 14px;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+a {
+  color: var(--accent);
+}
+
+code {
+  font-size: 0.9em;
+  background: #0006;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}

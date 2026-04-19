@@ -1,24 +1,17 @@
 """
-main.py — ColdMath Bot v2 Entry Point
+main.py — ColdMath Bot v4 Entry Point
 
-Reverse-engineered from wallet 0x594edb9112f526fa6a80b8f858a6379c8a2c1c11
-Confirmed P&L: $36,432 cumulative (Dec 2025 - Mar 28, 2026)
-March 2026 net: $27,697 on $3.1M gross volume (62,374 transactions)
-
-Strategy: Identify near-certain binary outcomes using domain-specific
-probability models, buy the favored side large (92-97¢), buy insurance
-tiny (3-8¢), merge when YES+NO < $1.00 or hold to resolution.
-
-Domains (in order of activation):
-  1. Weather temperature  — winter primary, all year partial
-  2. Soccer BTTS/spreads  — spring/autumn primary (xG Poisson model)
-  3. Financial closes     — summer fill, year-round (Black-Scholes implied)
+Per developer guide (ColdMath v4):
+  • Core rule: P_model(NO) − market_price(NO) ≥ min_edge AND confidence ≥ min_confidence
+  • Six UTC sessions (S0–S5), early sell on NO ≥ 99¢, four domains (weather, soccer, financial, cycling)
 
 Usage:
-  python main.py                    # paper trade (default)
-  python main.py --live             # live trading (implement orders.py first)
-  python main.py --validate SOCCER  # run model validation for a domain
-  python main.py --status           # print current engine state
+  python main.py                      # paper trade — same session clock as live
+  python main.py --live               # live trading (requires .env CLOB credentials)
+  python main.py --validate WEATHER   # domain model backtest stub
+  python main.py --validate CYCLING
+  python main.py --status             # print engine state from engine_state.json
+  python main.py --web               # bot + web UI on web_bind_host:web_port (build frontend first)
 """
 
 import asyncio
@@ -26,6 +19,7 @@ import argparse
 import logging
 import json
 import pathlib
+import socket
 import sys
 
 from core.bot import IntegratedBot
@@ -37,17 +31,57 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler("logs/bot.log"),
+        logging.FileHandler("logs/bot.log", encoding="utf-8"),
     ],
 )
 log = logging.getLogger("main")
 
 
+def _install_asyncio_network_exception_handler() -> None:
+    """
+    aiohttp may resolve hosts in background tasks; DNS failures (e.g. Windows
+    socket.gaierror 11001) can otherwise print as ERROR [asyncio] on stderr even
+    when the caller catches ClientError. Downgrade known transient cases to WARNING.
+    """
+    loop = asyncio.get_running_loop()
+    prev = loop.get_exception_handler()
+    try:
+        import aiohttp
+
+        _connector_err = (aiohttp.ClientConnectorError,)
+    except Exception:
+        _connector_err = ()
+
+    def _handler(l: asyncio.AbstractEventLoop, context: dict) -> None:
+        exc = context.get("exception")
+        if isinstance(exc, socket.gaierror):
+            log.warning(
+                "DNS lookup failed during async I/O (errno=%s). Check network, VPN, or DNS. %s",
+                getattr(exc, "errno", None),
+                exc,
+            )
+            return
+        if _connector_err and isinstance(exc, _connector_err):
+            log.warning("HTTP client connector error (often DNS or blocked TLS): %s", exc)
+            return
+        if prev is not None:
+            prev(l, context)
+        else:
+            l.default_exception_handler(context)
+
+    loop.set_exception_handler(_handler)
+
+
 def parse_args():
-    p = argparse.ArgumentParser(description="ColdMath Bot v2")
+    p = argparse.ArgumentParser(description="ColdMath Bot v4")
     p.add_argument("--live",     action="store_true", help="Enable live trading")
     p.add_argument("--validate", metavar="DOMAIN",    help="Validate a domain model")
     p.add_argument("--status",   action="store_true", help="Print engine status and exit")
+    p.add_argument(
+        "--web",
+        action="store_true",
+        help="Start web backend (FastAPI + static UI + WS) on web_bind_host:web_port with the bot",
+    )
     return p.parse_args()
 
 
@@ -100,6 +134,10 @@ def validate_domain(domain_name: str):
         from domains.financial import FinancialModel
         model = FinancialModel()
         results = model.backtest(days=30)
+    elif domain == Domain.CYCLING:
+        from domains.cycling import CyclingModel
+        model = CyclingModel()
+        results = model.backtest(days=30)
     else:
         print(f"No validator implemented for {domain.value}")
         return
@@ -126,6 +164,7 @@ def validate_domain(domain_name: str):
 
 async def main():
     pathlib.Path("logs").mkdir(exist_ok=True)
+    _install_asyncio_network_exception_handler()
 
     args = parse_args()
 
@@ -145,8 +184,25 @@ async def main():
         log.info("Paper trading mode (default). Use --live to trade real funds.")
         CONFIG["paper_trade"] = True
 
+    if args.web:
+        CONFIG["web_enabled"] = True
+
+    from core.monitor_hub import set_event_loop
+    from core.web_server import dashboard_url, run_web_server, web_should_run
+
+    set_event_loop(asyncio.get_running_loop())
+
     bot = IntegratedBot(CONFIG)
-    await bot.run()
+
+    if web_should_run(args.web, CONFIG):
+        log.info("Web dashboard (bot + UI + API): %s", dashboard_url(CONFIG))
+        log.info(
+            "Optional Vite UI (hot reload): run `cd frontend && npm run dev` in another terminal, "
+            "then open http://127.0.0.1:5173/ (bot must stay running on this port)."
+        )
+        await asyncio.gather(bot.run(), run_web_server(CONFIG))
+    else:
+        await bot.run()
 
 
 if __name__ == "__main__":

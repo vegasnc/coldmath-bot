@@ -1,4 +1,5 @@
 aiohttp>=3.9.0
+websockets>=12.0
 python-dotenv>=1.0.0
 pytest>=8.0.0
 pytest-asyncio>=0.23.0
@@ -23,3 +24,7 @@ deribit-api        # crypto implied vol
 
 # Live trading (implement when ready)
 py-clob-client>=0.14.0
+
+# Monitoring web UI (optional)
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0

@@ -1,37 +1,37 @@
 {
-  "date": "2026-04-16T04:00:20.760173+00:00",
+  "date": "2026-04-18T04:00:50.385923+00:00",
   "total_budget": 10000,
   "month": 4,
   "domains": {
     "weather": {
       "status": "active",
       "health": 1.0,
-      "allocation": 0.5061,
-      "budget": 5061.01,
+      "allocation": 0.4039,
+      "budget": 4039.29,
       "validated": true,
       "days_testing": 0
     },
     "soccer": {
       "status": "active",
       "health": 1.0,
-      "allocation": 0.4011,
-      "budget": 4010.61,
+      "allocation": 0.4989,
+      "budget": 4988.89,
       "validated": true,
       "days_testing": 0
     },
     "financial": {
       "status": "testing",
       "health": 1.0,
-      "allocation": 0.0464,
-      "budget": 464.19,
+      "allocation": 0.0486,
+      "budget": 485.91,
       "validated": false,
       "days_testing": 0
     },
     "cycling": {
       "status": "testing",
       "health": 1.0,
-      "allocation": 0.0464,
-      "budget": 464.19,
+      "allocation": 0.0486,
+      "budget": 485.91,
       "validated": false,
       "days_testing": 0
     }
